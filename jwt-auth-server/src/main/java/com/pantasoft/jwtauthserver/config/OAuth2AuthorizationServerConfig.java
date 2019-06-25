@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
@@ -23,9 +24,12 @@ public class OAuth2AuthorizationServerConfig extends AuthorizationServerConfigur
     @Qualifier("authenticationManagerBean")
     private AuthenticationManager authenticationManager;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     // Configure the token store and authentication manager
     @Override
-    public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
+    public void configure(AuthorizationServerEndpointsConfigurer endpoints) {
 
         endpoints
                 .tokenStore(tokenStore())
@@ -33,18 +37,23 @@ public class OAuth2AuthorizationServerConfig extends AuthorizationServerConfigur
                 .authenticationManager(authenticationManager);
     }
 
-    // Configure a client store. In-memory for simplicity, but consider other options for real apps.
+    /**
+     * Setting up the clients with a clientId, a clientSecret, a scope, the grant types and the authorities.
+     *
+     * @param clients
+     * @throws Exception
+     */
     @Override
     public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
 
-        clients
-                .inMemory()
-                .withClient("myclient")
-                .secret("secret")
+        clients.inMemory().withClient("my-trusted-client")
                 .authorizedGrantTypes("authorization_code", "implicit", "password", "client_credentials", "refresh_token")
-                .scopes("read")
+                .authorities("ROLE_CLIENT", "ROLE_TRUSTED_CLIENT")
+                .scopes("read", "write", "trust")
+                .resourceIds("oauth2-resource")
                 .redirectUris("http://localhost:9191/x")
-                .accessTokenValiditySeconds(86400); // 24 hours
+                .accessTokenValiditySeconds(86400) // 24 hours
+                .secret(passwordEncoder.encode("secret"));
     }
 
     // A token store bean. JWT token store
@@ -58,7 +67,7 @@ public class OAuth2AuthorizationServerConfig extends AuthorizationServerConfigur
     @Bean
     public JwtAccessTokenConverter accessTokenConverter() {
 
-        JwtAccessTokenConverter converter = new JwtAccessTokenConverter();
+        var converter = new JwtAccessTokenConverter();
         converter.setSigningKey("123"); // symmetric key
         return converter;
     }
@@ -68,7 +77,7 @@ public class OAuth2AuthorizationServerConfig extends AuthorizationServerConfigur
     @Primary
     public DefaultTokenServices tokenServices() {
 
-        DefaultTokenServices defaultTokenServices = new DefaultTokenServices();
+        var defaultTokenServices = new DefaultTokenServices();
         defaultTokenServices.setTokenStore(tokenStore());
         return defaultTokenServices;
     }
