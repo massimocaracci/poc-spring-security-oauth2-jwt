@@ -1,2 +1,18 @@
 server:
   port: 9999
+
+spring:
+  application:
+    name: jwt-auth-server
+
+  logging:
+    level:
+      com.pantasoft: DEBUG
+
+management:
+  security:
+    user:
+      password: password
+    oauth2:
+      resource:
+        filter-order: 3
