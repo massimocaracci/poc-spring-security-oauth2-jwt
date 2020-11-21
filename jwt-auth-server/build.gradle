@@ -9,8 +9,8 @@ group = 'com.pantasoft'
 version = '0.0.1-SNAPSHOT'
 
 allprojects {
-    sourceCompatibility = 12
-    targetCompatibility = 12
+    sourceCompatibility = 11
+    targetCompatibility = 11
 }
 
 configurations {
